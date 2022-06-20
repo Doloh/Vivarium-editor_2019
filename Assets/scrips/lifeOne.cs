@@ -4,9 +4,16 @@ using UnityEngine;
 
 public class lifeOne : MonoBehaviour
 {
-    private float speed = 2f;
+    private float speed = 1f;
     private float rayRange = 3f;
     private Transform suivi;
+
+    public Transform Suivi { get => suivi; set => suivi = value; }
+    public float Speed { get => speed; set => speed = value; }
+
+    //par defaut false, detecter si le script lifeLead est sur l'objet pour mettre à true en start
+    public bool lifeLead = false;
+
 
     void Start()
     {
@@ -19,7 +26,7 @@ public class lifeOne : MonoBehaviour
 
     void FixedUpdate()
     {
-        float rspeed = speed * Time.deltaTime * 10;
+        float rspeed = Speed * Time.deltaTime * 10;
         transform.Translate(new Vector3(0, 0, rspeed));
     }
 
@@ -35,39 +42,49 @@ public class lifeOne : MonoBehaviour
         //si mon raycast detecte quelque chose.
         if (Physics.Raycast(myRaycast, out RaycastHit hit, rayRange))
         {
-            //rotation de mon objet sur lui même
-            transform.Rotate(-Random.value * 20, -Random.value * 10, 0);
-
-            if (hit.collider.tag == "life")
+            if (hit.collider.tag == "life" && lifeLead == false)
             {
-                // l'objet devient "suiveur" de cette "life", et recupere le transform de l'objet suivi
-                suivi = hit.transform;
+                // on suit la life rencontré
+                Suivi = hit.transform;
             } else
             {
-                float random = Random.value;
-                if (random < 0.01f)
+                //si on rencontre un obstacle rotation de mon objet sur lui même
+                transform.Rotate(-Random.value * 10, -Random.value * 5, 0);
+
+                // si on rencontre un obstacle on decroche parfois de la life qu'on suivait
+                if (Random.value < 0.0001f && lifeLead == false)
                 {
-                    Debug.Log(gameObject.name + "decrochage" + ": " + random);
-                    suivi = null;
+                   // Debug.Log(gameObject.name + "decrochage" + ": " + random);
+                    Suivi = null;
                 }
             }
         }
-        else // si on ne suit rien ou ne detecte rien, on ne tourne pas, sauf si on suit 
+        else //si aucune detection
         {
+            //pas de rotation
             transform.Rotate(0, 0, 0);
 
-            if (suivi != null)
+            //sauf si on suit une life
+            if (Suivi != null && lifeLead == false)
             {
-                //on cherche à retrouver la life suivie
-                // utilise une rotation smooth en direction de la life suivi
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    Quaternion.LookRotation(suivi.position - transform.position),
-                    5f * Time.deltaTime);
-
-                //Le look at n'est pas trés smooth
-                //transform.LookAt(suivi);           
+                // RETROUVER la life suivi si la distance entre life et life suivi est plus grand que ***    
+                if(Vector3.Distance(transform.position, Suivi.position) > 2f)
+                {
+                    // utilise une rotation smooth en direction de la life suivi
+                    transform.rotation = Quaternion.Slerp(
+                        transform.rotation,
+                        Quaternion.LookRotation(Suivi.position - transform.position),
+                        1f * Time.deltaTime);
+                } else
+                {
+                    //// IMITER la life suivi quand on est proche             
+                    this.gameObject.transform.rotation = Suivi.rotation;
+                }                         
             }
         }
     }
+    
+
+
+
 }
